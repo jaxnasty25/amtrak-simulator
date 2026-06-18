@@ -1,1 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amtrak JAX–SAV Simulator</title>
 
+<style>
+body{
+    margin:0;
+    background:#0f172a;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+}
+
+h1{
+    margin:10px;
+}
+
+#hud{
+    padding:10px;
+    background:#111827;
+    border-bottom:2px solid #374151;
+}
+
+#game{
+    width:100%;
+    height:250px;
+    background:linear-gradient(#4da6ff,#87ceeb);
+    position:relative;
+    overflow:hidden;
+}
+
+#ground{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:70px;
+    background:#1f2937;
+}
+
+#track{
+    position:absolute;
+    bottom:40px;
+    width:100%;
+    height:6px;
+    background:#999;
+}
+
+#train{
+    position:absolute;
+    bottom:50px;
+    left:40px;
+    font-size:60px;
+}
+
+.controls{
+    padding:15px;
+}
+
+button{
+    font-size:20px;
+    padding:12px 18px;
+    margin:5px;
+}
+
+.signal{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.green{color:lime;}
+.yellow{color:gold;}
+.red{color:red;}
+</style>
+</head>
+
+<body>
+
+<h1>🚂 Amtrak JAX → SAV</h1>
+
+<div id="hud">
+    <div id="speed">Speed: 0 mph</div>
+    <div id="mile">MP: 0.0</div>
+    <div id="station">Next Stop: Yulee</div>
+    <div id="score">Score: 0</div>
+    <div id="signal" class="signal green">CLEAR</div>
+</div>
+
+<div id="game">
+    <div id="track"></div>
+    <div id="ground"></div>
+    <div id="train">🚂</div>
+</div>
+
+<div class="controls">
+    <button onclick="throttle()">Throttle +</button>
+    <button onclick="brake()">Brake -</button>
+    <button onclick="horn()">📯 Horn</button>
+</div>
+
+<script>
+
+let speed = 0;
+let mile = 0;
+let score = 0;
+
+const stations = [
+ {name:"Yulee", mp:18},
+ {name:"Kingsland", mp:37},
+ {name:"Savannah", mp:60}
+];
+
+let nextStation = 0;
+
+function throttle(){
+    speed = Math.min(speed + 5, 79);
+}
+
+function brake(){
+    speed = Math.max(speed - 5, 0);
+}
+
+function horn(){
+    score += 1;
+}
+
+function getSignal(){
+
+    if(mile < 20){
+        return ["CLEAR","green"];
+    }
+
+    if(mile < 45){
+        return ["APPROACH","yellow"];
+    }
+
+    return ["STOP","red"];
+}
+
+function update(){
+
+    mile += speed / 200;
+
+    score += 1;
+
+    const sig = getSignal();
+
+    if(sig[0] === "APPROACH" && speed > 30){
+        score -= 2;
+    }
+
+    if(sig[0] === "STOP" && speed > 15){
+        score -= 5;
+    }
+
+    if(nextStation < stations.length &&
+       mile >= stations[nextStation].mp){
+
+        if(speed <= 5){
+            alert("Perfect stop at " +
+                  stations[nextStation].name);
+            score += 100;
+        } else {
+            alert("You missed " +
+                  stations[nextStation].name);
+            score -= 50;
+        }
+
+        nextStation++;
+    }
+
+    document.getElementById("speed")
+        .innerText = "Speed: " + speed + " mph";
+
+    document.getElementById("mile")
+        .innerText = "MP: " + mile.toFixed(1);
+
+    document.getElementById("score")
+        .innerText = "Score: " + score;
+
+    document.getElementById("station")
+        .innerText =
+        "Next Stop: " +
+        (nextStation < stations.length
+         ? stations[nextStation].name
+         : "Trip Complete");
+
+    let signalDiv =
+        document.getElementById("signal");
+
+    signalDiv.innerText = sig[0];
+    signalDiv.className =
+        "signal " + sig[1];
+
+    let trainPos =
+        Math.min((mile/60)*85,85);
+
+    document.getElementById("train")
+        .style.left = trainPos + "%";
+
+    if(mile >= 60){
+
+        alert(
+            "Arrived Savannah!\nFinal Score: "
+            + score
+        );
+
+        clearInterval(loop);
+    }
+}
+
+const loop = setInterval(update,250);
+
+</script>
+
+</body>
+</html>
